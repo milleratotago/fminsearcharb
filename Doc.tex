@@ -1,0 +1,232 @@
+\documentclass{article}
+
+\usepackage[parfill]{parskip}  %  Include a blank line between paragraphs.
+
+\sloppy
+\pretolerance=5000
+\tolerance=5000
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+%                                          APA     My max   My min
+%                                         default    page     page
+\setlength{\footnotesep}    {   5mm}    %  5mm        5mm      5mm
+\setlength{\topmargin}      { -15mm}    %  0mm      -25mm    -15mm
+\setlength{\oddsidemargin}  {  -6mm}    %  0.25in    -6mm     -6mm
+\setlength{\evensidemargin} {  -6mm}    %  0.25in    -6mm     -6mm
+\setlength{\textwidth}      { 165mm}    %  6in      165mm    165mm
+\setlength{\textheight}     { 240mm}    %  8.5in    240mm    240mm
+\setlength{\headheight}     {   3mm}    %  ??         3mm      3mm
+\setlength{\headsep}        {  10mm}    %  ??        10mm     10mm
+\setlength{\footskip}       {  10mm}    %  ??        10mm     10mm
+
+
+\title{fminsearcharb: Minimize Function With Constrained and/or Integer Parameters}
+\author{Jeff Miller (miller at psy.otago.ac.nz)}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Overview}
+
+fminsearcharb is a wrapper function that allows MATLAB users to employ fminsearch with constrained parameters.
+It was inspired by John D'Errico's fminsearchbnd and fminsearchcon, but it allows a bit
+more flexibility with regard to parameter constraints (e.g., parameters can be
+constrained to be integers).
+
+\section{Requirements}
+
+As far as I know, it should work with any version of MATLAB that includes fminsearch.
+
+\section{License}
+
+Copyright (C) 2017, Jeff Miller
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see http://www.gnu.org/licenses/ 
+
+\section{Syntax}
+
+fminsearcharb is called with one of these basic parameter configurations:
+\begin{itemize}
+\item xparms2 = fminsearcharb(ErrFun,x0parms,realstoparms,parmstoreals)
+\item xparms2 = fminsearcharb(ErrFun,x0parms,realstoparms,parmstoreals,parmcodes)
+\item xparms2 = fminsearcharb(ErrFun,x0parms,realstoparms,parmstoreals,parmcodes,fmsoptions)
+\item xparms2 = fminsearcharb(ErrFun,x0parms,realstoparms,parmstoreals,parmcodes,fmsoptions,d1,d2,\ldots)
+\item {[xparms2,fval,exitflag,output]} = fminsearcharb(ErrFun,x0parms,...)
+\end{itemize}
+
+These are the input parameters (those marked * are exactly the same as in MATLAB's fminsearch):
+\begin{itemize}
+\item ErrFun*:  The error function to be minimized
+\item x0parms*: A vector of the starting values for each parameter
+\item realstoparms: A function mapping a vector of any real numbers onto a set of parameter values
+                    satisfying your desired constraints.  For further details, see section~\ref{sec:constraints}.
+\item parmstoreals: A function which is the inverse of realstoparms (i.e., maps your parameter values
+                    onto the full set of real numbers considered by fminsearch).
+\item parmcodes: A list of characters---one per parameter---indicating whether each parameter is
+                 an adjustable real number, an adjustable integer, or fixed.
+                 For further details, see section~\ref{sec:parmcodes}.
+\item fmsoptions*: A set of options passed through to fminsearch.
+\item d1,d2,\ldots: Additional \emph{data parameters} that are to be passed through to the ErrFunc
+\end{itemize}
+
+The output results are the same as those produced by MATLAB's fminsearch and are described in more
+detail in their documentation.  In brief:
+\begin{itemize}
+\item xparms2: best parameter values that were found
+\item fval: minimum value found for ErrFun
+\item exitflag: the reason for stopping, returned as an integer.  1 = converged, 0 = Too many iterations,  -1 = terminated by output function.
+\item output: structure holding information about the optimization process (e.g., number of iterations).
+\end{itemize}
+
+\section{Constraints}
+\label{sec:constraints}
+
+Example: Suppose you want to minimize an error function ErrFunc that depends on parameters p1, p2, and p3.
+If p1, p2, and p3 can take on any real number values, you can just use fminsearch.
+But suppose that there are three constraints---for example:
+\begin{itemize}
+\item $0<p1<1$
+\item $100<=p2$
+\item $p3>=p1+p2$
+\end{itemize}
+
+To use fminsearcharb, you must supply two functions that map back and forth between the
+parameter ranges that you want and the full range of real numbers that fminsearch considers.
+
+One function, called ``realstoparms'', maps from the range of all reals to the
+range of the parameter space you want.
+For the above three example constraints, this function could be:
+\begin{verbatim}
+function [ xparms ] = realstoparms( xreals, ~ )
+% Example function to convert arbitrary reals to acceptable parm values
+% according to the constraints in the documentation.
+xparms = zeros(3,1);
+xparms(1) = abs(xreals(1)) / (1 + abs(xreals(1)));   % xparms(1) always between 0 and 1
+xparms(2) = 100 + xreals(2)^2;                       % xparms(2) always >= 100
+xparms(3) = xparms(1) + xparms(2) + xreals(3)^2;     % xparms(3) always >= xparms(1) + xparms(2)
+end
+\end{verbatim}
+Note that the output values for this mapping function always satisfy the desired
+constraints for any set of real numbers that fminsearch might consider.
+
+Of course you will have different constraints and so you must write a different
+realstoparms function to implement those constraints.
+There are almost always several different ways to write this function (i.e.,
+different ways to ``enforce the constraints''), and it is up to you to choose
+the one that works best for your problem.
+(In my experience, it doesn't usually matter much.)
+
+You must also write an inverse function, called ``parmstoreals'', that goes back
+from the range of your parameter space to the range of all reals.
+For the realstoparms function given above, the reverse function is:
+\begin{verbatim}
+function [ xreals ] = parmstoreals( xparms, ~ )
+% Example function to convert acceptable parm values to arbitrary reals,
+% exactly reversing the mapping used by realstoparms
+xreals = zeros(3,1);
+xreals(1) = xparms(1) / (1 - xparms(1));              % Assume 0<xparms(1)<1
+xreals(2) = sqrt(xparms(2) - 100);                    % Assume xparms(2) >= 100
+xreals(3) = sqrt(xparms(3) - xparms(1) - xparms(2));  % Assume xparms(3) >= xparms(1) - xparms(2)
+end
+\end{verbatim}
+
+Included with fminsearcharb is a class called NumTrans, which contains some handy routines
+that can be used within realstoparms and parmstoreals (see demo2.m for an example).
+
+Here are several important points to remember about realstoparms and parmstoreals:
+\begin{itemize}
+\item Both functions must accept two input parameters.  The first is the vector of parms
+      or reals that is to be converted.
+      The second is the parmcodes string (see section~\ref{sec:parmcodes}).
+      This string is passed to these functions by fminsearcharb, so the functions must
+      be able to accept the second parameter even if it is not used.
+      (It is rarely a good idea to have realstoparms and parmstoreals
+      check parmcodes, but once in a while it is essential.)
+\item These functions should process \emph{all} parameters, including any fixed ones.
+\item These functions should process all parameters as real numbers and \emph{not}
+      attempt to force any parameters to be integers (e.g., by rounding).
+      For example, if you want a parameter to be an integer greater than or equal to 1,
+      realstoparms and parmstoreals should just make sure it is greater than 1,
+      but not round it.
+      Conversion to integers happens as part of the search process within fminsearcharb.
+      Doing that conversion within realstoparms and parmstoreals will disrupt the search.
+\end{itemize}
+
+
+\section{ParmCodes: Integer Parameters and Fixed Parameters}
+\label{sec:parmcodes}
+
+fminsearcharb also allows you to constrain parameters in two other ways
+besides those provided by realstoparms and parmstoreals:
+(a) You can constrain the parameter value to be an integer, or
+(b) you can constrain it to remained fixed.
+These constraints are specified by means of an fminsearcharb calling
+parameter called ``parmcodes''.
+
+Parmcodes is a string with one character for each of the parameters
+that is passed to your error function.
+Each character should be one of these possibilities:
+\begin{itemize}
+\item r: This parameter should be adjusted by fminsearch, and it can be any real number, subject to the constraints
+         enforced by realstoparms.
+\item i: This parameter should be adjusted by fminsearch, and it must be an integer, subject to the constraints
+         enforced by realstoparms.
+\item f: This parameter should not be adjusted by fminsearch.
+\end{itemize}
+
+\section{Other Issues}
+
+All of the considerations involving function minimization (e.g., local minima, multiple solutions) apply as usual,
+and these are sometimes worsened if there are integer parameters.
+
+The use of transformations can increase these problems and introduce additional ones.
+For an excellent discussion of these issues, see the document ``Understanding fminsearchbnd'' by John D'Errico
+in his FMINSEARCHBND contribution to MATLAB File Exchange.
+The sections  ``Multiple solutions due to the transformations''
+and  ``Starting values, infeasible starting values, tolerances, etc.''
+are particularly relevant to fminsearcharb.
+
+
+\section{Search Method With Integer Parameters}
+
+For anyone who is curious, this section briefly describes fminsearcharb's method of searching for integer parameters.
+You don't need to read this section if you just want to use fminsearcharb.
+
+fminsearch always tries real-valued parameters as candidates to minimize ErrFun.
+So, for an integer parameter, fminsearcharb evaluates the error function twice, once for
+each integer value above and below the current real-valued candidate (which I admit may
+not be very efficient).
+For example, if fminsearch wants to evaluate the candidate value of 6.25, fminsearcharb
+evaluates the error function with floor(6.25)=6 and ceil(6.25)=7.
+The overall error function computed for 6.25 (and returned to fminsearch) is computed as
+the weighted average of the error functions at 6 and 7, with weights of 0.75 and 0.25,
+respectively (6 gets the higher weight because 6.25 is closer to 6).
+
+Note that this procedure always converges onto some integer as long as two adjacent integers give
+different error values.
+For example, it will go to 7 if ErrFun(6) $>$ ErrFun(7), because the smallest weighted average error value
+is 0.0*ErrFun(6)+1.00*ErrFun(7).
+
+Note also that this procedure naturally tries larger and smaller integers as appropriate.
+For example, if ErrFun(6) $>$ ErrFun(7), fminsearch might suggest a series of values like
+6.25, 6.65, 6.90, 7.10, \ldots.
+Once the candidate value of 7.10 is reached, the new overall error will be the weighted average
+of ErrFun(7) and ErrFun(8), so the function will ``find'' 8 if that is better than 7.
+And so on.
+
+When searching with 2,3,\ldots\ integer parameters, the same basic idea is used in 2,3,\ldots\ dimensions.
+
+\end{document}

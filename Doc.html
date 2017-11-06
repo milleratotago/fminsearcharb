@@ -1,0 +1,371 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+           "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<meta name="GENERATOR" content="TtHgold 4.00">
+ <style type="text/css"> div.p { margin-top: 7pt;}</style>
+ <style type="text/css"><!--
+ td div.comp { margin-top: -0.6ex; margin-bottom: -1ex;}
+ td div.comb { margin-top: -0.6ex; margin-bottom: -.6ex;}
+ td div.hrcomp { line-height: 0.9; margin-top: -0.8ex; margin-bottom: -1ex;}
+ td div.norm {line-height:normal;}
+ span.roman {font-family: serif; font-style: normal; font-weight: normal;} 
+ span.overacc2 {position: relative;  left: .8em; top: -1.2ex;}
+ span.overacc1 {position: relative;  left: .6em; top: -1.2ex;} --></style>
+ 
+
+                                      
+<title> fminsearcharb: Minimize Function With Constrained and/or Integer Parameters</title>
+ 
+<h1 align="center">fminsearcharb: Minimize Function With Constrained and/or Integer Parameters </h1>
+
+<h3 align="center">Jeff Miller (miller at psy.otago.ac.nz) </h3>
+
+<div class="p"><!----></div>
+ 
+<h1>Contents </h1><a href="#tth_sEc1"
+>1&nbsp; Overview</a><br />
+<a href="#tth_sEc2"
+>2&nbsp; Requirements</a><br />
+<a href="#tth_sEc3"
+>3&nbsp; License</a><br />
+<a href="#tth_sEc4"
+>4&nbsp; Syntax</a><br />
+<a href="#tth_sEc5"
+>5&nbsp; Constraints</a><br />
+<a href="#tth_sEc6"
+>6&nbsp; ParmCodes: Integer Parameters and Fixed Parameters</a><br />
+<a href="#tth_sEc7"
+>7&nbsp; Other Issues</a><br />
+<a href="#tth_sEc8"
+>8&nbsp; Search Method With Integer Parameters</a><br />
+
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc1">
+1</a>&nbsp;&nbsp;Overview</h2>
+
+<div class="p"><!----></div>
+fminsearcharb is a wrapper function that allows MATLAB users to employ fminsearch with constrained parameters.
+It was inspired by John D'Errico's fminsearchbnd and fminsearchcon, but it allows a bit
+more flexibility with regard to parameter constraints (e.g., parameters can be
+constrained to be integers).
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc2">
+2</a>&nbsp;&nbsp;Requirements</h2>
+
+<div class="p"><!----></div>
+As far as I know, it should work with any version of MATLAB that includes fminsearch.
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc3">
+3</a>&nbsp;&nbsp;License</h2>
+
+<div class="p"><!----></div>
+Copyright (C) 2017, Jeff Miller
+
+<div class="p"><!----></div>
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+<div class="p"><!----></div>
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+<div class="p"><!----></div>
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see http://www.gnu.org/licenses/ 
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc4">
+4</a>&nbsp;&nbsp;Syntax</h2>
+
+<div class="p"><!----></div>
+fminsearcharb is called with one of these basic parameter configurations:
+
+<ul>
+<li> xparms2 = fminsearcharb(ErrFun,x0parms,realstoparms,parmstoreals)
+<div class="p"><!----></div>
+</li>
+
+<li> xparms2 = fminsearcharb(ErrFun,x0parms,realstoparms,parmstoreals,parmcodes)
+<div class="p"><!----></div>
+</li>
+
+<li> xparms2 = fminsearcharb(ErrFun,x0parms,realstoparms,parmstoreals,parmcodes,fmsoptions)
+<div class="p"><!----></div>
+</li>
+
+<li> xparms2 = fminsearcharb(ErrFun,x0parms,realstoparms,parmstoreals,parmcodes,fmsoptions,d1,d2,...)
+<div class="p"><!----></div>
+</li>
+
+<li> [xparms2,fval,exitflag,output] = fminsearcharb(ErrFun,x0parms,...)
+<div class="p"><!----></div>
+</li>
+</ul>
+
+<div class="p"><!----></div>
+These are the input parameters (those marked * are exactly the same as in MATLAB's fminsearch):
+
+<ul>
+<li> ErrFun*:  The error function to be minimized
+<div class="p"><!----></div>
+</li>
+
+<li> x0parms*: A vector of the starting values for each parameter
+<div class="p"><!----></div>
+</li>
+
+<li> realstoparms: A function mapping a vector of any real numbers onto a set of parameter values
+                    satisfying your desired constraints.  For further details, see section&nbsp;<a href="#sec:constraints">5</a>.
+<div class="p"><!----></div>
+</li>
+
+<li> parmstoreals: A function which is the inverse of realstoparms (i.e., maps your parameter values
+                    onto the full set of real numbers considered by fminsearch).
+<div class="p"><!----></div>
+</li>
+
+<li> parmcodes: A list of characters-one per parameter-indicating whether each parameter is
+                 an adjustable real number, an adjustable integer, or fixed.
+                 For further details, see section&nbsp;<a href="#sec:parmcodes">6</a>.
+<div class="p"><!----></div>
+</li>
+
+<li> fmsoptions*: A set of options passed through to fminsearch.
+<div class="p"><!----></div>
+</li>
+
+<li> d1,d2,...: Additional <em>data parameters</em> that are to be passed through to the ErrFunc
+<div class="p"><!----></div>
+</li>
+</ul>
+
+<div class="p"><!----></div>
+The output results are the same as those produced by MATLAB's fminsearch and are described in more
+detail in their documentation.  In brief:
+
+<ul>
+<li> xparms2: best parameter values that were found
+<div class="p"><!----></div>
+</li>
+
+<li> fval: minimum value found for ErrFun
+<div class="p"><!----></div>
+</li>
+
+<li> exitflag: the reason for stopping, returned as an integer.  1 = converged, 0 = Too many iterations,  -1 = terminated by output function.
+<div class="p"><!----></div>
+</li>
+
+<li> output: structure holding information about the optimization process (e.g., number of iterations).
+<div class="p"><!----></div>
+</li>
+</ul>
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc5">
+5</a>&nbsp;&nbsp;Constraints</h2>
+<a name="sec:constraints">
+</a>
+
+<div class="p"><!----></div>
+Example: Suppose you want to minimize an error function ErrFunc that depends on parameters p1, p2, and p3.
+If p1, p2, and p3 can take on any real number values, you can just use fminsearch.
+But suppose that there are three constraints-for example:
+
+<ul>
+<li> 0 &lt; p1 &lt; 1
+<div class="p"><!----></div>
+</li>
+
+<li> 100 &lt; =p2
+<div class="p"><!----></div>
+</li>
+
+<li> p3 &gt; =p1+p2
+<div class="p"><!----></div>
+</li>
+</ul>
+
+<div class="p"><!----></div>
+To use fminsearcharb, you must supply two functions that map back and forth between the
+parameter ranges that you want and the full range of real numbers that fminsearch considers.
+
+<div class="p"><!----></div>
+One function, called "realstoparms", maps from the range of all reals to the
+range of the parameter space you want.
+For the above three example constraints, this function could be:
+
+<pre>
+function&nbsp;[&nbsp;xparms&nbsp;]&nbsp;=&nbsp;realstoparms(&nbsp;xreals,&nbsp;~&nbsp;)
+%&nbsp;Example&nbsp;function&nbsp;to&nbsp;convert&nbsp;arbitrary&nbsp;reals&nbsp;to&nbsp;acceptable&nbsp;parm&nbsp;values
+%&nbsp;according&nbsp;to&nbsp;the&nbsp;constraints&nbsp;in&nbsp;the&nbsp;documentation.
+xparms&nbsp;=&nbsp;zeros(3,1);
+xparms(1)&nbsp;=&nbsp;abs(xreals(1))&nbsp;/&nbsp;(1&nbsp;+&nbsp;abs(xreals(1)));&nbsp;&nbsp;&nbsp;%&nbsp;xparms(1)&nbsp;always&nbsp;between&nbsp;0&nbsp;and&nbsp;1
+xparms(2)&nbsp;=&nbsp;100&nbsp;+&nbsp;xreals(2)^2;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%&nbsp;xparms(2)&nbsp;always&nbsp;&#62;=&nbsp;100
+xparms(3)&nbsp;=&nbsp;xparms(1)&nbsp;+&nbsp;xparms(2)&nbsp;+&nbsp;xreals(3)^2;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%&nbsp;xparms(3)&nbsp;always&nbsp;&#62;=&nbsp;xparms(1)&nbsp;+&nbsp;xparms(2)
+end
+
+</pre>
+Note that the output values for this mapping function always satisfy the desired
+constraints for any set of real numbers that fminsearch might consider.
+
+<div class="p"><!----></div>
+Of course you will have different constraints and so you must write a different
+realstoparms function to implement those constraints.
+There are almost always several different ways to write this function (i.e.,
+different ways to "enforce the constraints"), and it is up to you to choose
+the one that works best for your problem.
+(In my experience, it doesn't usually matter much.)
+
+<div class="p"><!----></div>
+You must also write an inverse function, called "parmstoreals", that goes back
+from the range of your parameter space to the range of all reals.
+For the realstoparms function given above, the reverse function is:
+
+<pre>
+function&nbsp;[&nbsp;xreals&nbsp;]&nbsp;=&nbsp;parmstoreals(&nbsp;xparms,&nbsp;~&nbsp;)
+%&nbsp;Example&nbsp;function&nbsp;to&nbsp;convert&nbsp;acceptable&nbsp;parm&nbsp;values&nbsp;to&nbsp;arbitrary&nbsp;reals,
+%&nbsp;exactly&nbsp;reversing&nbsp;the&nbsp;mapping&nbsp;used&nbsp;by&nbsp;realstoparms
+xreals&nbsp;=&nbsp;zeros(3,1);
+xreals(1)&nbsp;=&nbsp;xparms(1)&nbsp;/&nbsp;(1&nbsp;-&nbsp;xparms(1));&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%&nbsp;Assume&nbsp;0&lt;xparms(1)&lt;1
+xreals(2)&nbsp;=&nbsp;sqrt(xparms(2)&nbsp;-&nbsp;100);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%&nbsp;Assume&nbsp;xparms(2)&nbsp;&#62;=&nbsp;100
+xreals(3)&nbsp;=&nbsp;sqrt(xparms(3)&nbsp;-&nbsp;xparms(1)&nbsp;-&nbsp;xparms(2));&nbsp;&nbsp;%&nbsp;Assume&nbsp;xparms(3)&nbsp;&#62;=&nbsp;xparms(1)&nbsp;-&nbsp;xparms(2)
+end
+
+</pre>
+
+<div class="p"><!----></div>
+Included with fminsearcharb is a class called NumTrans, which contains some handy routines
+that can be used within realstoparms and parmstoreals (see demo2.m for an example).
+
+<div class="p"><!----></div>
+Here are several important points to remember about realstoparms and parmstoreals:
+
+<ul>
+<li> Both functions must accept two input parameters.  The first is the vector of parms
+      or reals that is to be converted.
+      The second is the parmcodes string (see section&nbsp;<a href="#sec:parmcodes">6</a>).
+      This string is passed to these functions by fminsearcharb, so the functions must
+      be able to accept the second parameter even if it is not used.
+      (It is rarely a good idea to have realstoparms and parmstoreals
+      check parmcodes, but once in a while it is essential.)
+<div class="p"><!----></div>
+</li>
+
+<li> These functions should process <em>all</em> parameters, including any fixed ones.
+<div class="p"><!----></div>
+</li>
+
+<li> These functions should process all parameters as real numbers and <em>not</em>
+      attempt to force any parameters to be integers (e.g., by rounding).
+      For example, if you want a parameter to be an integer greater than or equal to 1,
+      realstoparms and parmstoreals should just make sure it is greater than 1,
+      but not round it.
+      Conversion to integers happens as part of the search process within fminsearcharb.
+      Doing that conversion within realstoparms and parmstoreals will disrupt the search.
+<div class="p"><!----></div>
+</li>
+</ul>
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc6">
+6</a>&nbsp;&nbsp;ParmCodes: Integer Parameters and Fixed Parameters</h2>
+<a name="sec:parmcodes">
+</a>
+
+<div class="p"><!----></div>
+fminsearcharb also allows you to constrain parameters in two other ways
+besides those provided by realstoparms and parmstoreals:
+(a) You can constrain the parameter value to be an integer, or
+(b) you can constrain it to remained fixed.
+These constraints are specified by means of an fminsearcharb calling
+parameter called "parmcodes".
+
+<div class="p"><!----></div>
+Parmcodes is a string with one character for each of the parameters
+that is passed to your error function.
+Each character should be one of these possibilities:
+
+<ul>
+<li> r: This parameter should be adjusted by fminsearch, and it can be any real number, subject to the constraints
+         enforced by realstoparms.
+<div class="p"><!----></div>
+</li>
+
+<li> i: This parameter should be adjusted by fminsearch, and it must be an integer, subject to the constraints
+         enforced by realstoparms.
+<div class="p"><!----></div>
+</li>
+
+<li> f: This parameter should not be adjusted by fminsearch.
+<div class="p"><!----></div>
+</li>
+</ul>
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc7">
+7</a>&nbsp;&nbsp;Other Issues</h2>
+
+<div class="p"><!----></div>
+All of the considerations involving function minimization (e.g., local minima, multiple solutions) apply as usual,
+and these are sometimes worsened if there are integer parameters.
+
+<div class="p"><!----></div>
+The use of transformations can increase these problems and introduce additional ones.
+For an excellent discussion of these issues, see the document "Understanding fminsearchbnd" by John D'Errico
+in his FMINSEARCHBND contribution to MATLAB File Exchange.
+The sections  "Multiple solutions due to the transformations"
+and  "Starting values, infeasible starting values, tolerances, etc."
+are particularly relevant to fminsearcharb.
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc8">
+8</a>&nbsp;&nbsp;Search Method With Integer Parameters</h2>
+
+<div class="p"><!----></div>
+For anyone who is curious, this section briefly describes fminsearcharb's method of searching for integer parameters.
+You don't need to read this section if you just want to use fminsearcharb.
+
+<div class="p"><!----></div>
+fminsearch always tries real-valued parameters as candidates to minimize ErrFun.
+So, for an integer parameter, fminsearcharb evaluates the error function twice, once for
+each integer value above and below the current real-valued candidate (which I admit may
+not be very efficient).
+For example, if fminsearch wants to evaluate the candidate value of 6.25, fminsearcharb
+evaluates the error function with floor(6.25)=6 and ceil(6.25)=7.
+The overall error function computed for 6.25 (and returned to fminsearch) is computed as
+the weighted average of the error functions at 6 and 7, with weights of 0.75 and 0.25,
+respectively (6 gets the higher weight because 6.25 is closer to 6).
+
+<div class="p"><!----></div>
+Note that this procedure always converges onto some integer as long as two adjacent integers give
+different error values.
+For example, it will go to 7 if ErrFun(6)  &gt;  ErrFun(7), because the smallest weighted average error value
+is 0.0*ErrFun(6)+1.00*ErrFun(7).
+
+<div class="p"><!----></div>
+Note also that this procedure naturally tries larger and smaller integers as appropriate.
+For example, if ErrFun(6)  &gt;  ErrFun(7), fminsearch might suggest a series of values like
+6.25, 6.65, 6.90, 7.10, ....
+Once the candidate value of 7.10 is reached, the new overall error will be the weighted average
+of ErrFun(7) and ErrFun(8), so the function will "find" 8 if that is better than 7.
+And so on.
+
+<div class="p"><!----></div>
+When searching with 2,3,...&nbsp;integer parameters, the same basic idea is used in 2,3,...&nbsp;dimensions.
+
+<div class="p"><!----></div>
+
+<br /><br /><hr /><small>File translated from
+T<sub><font size="-1">E</font></sub>X
+by <a href="http://hutchinson.belmont.ma.us/tth/">
+T<sub><font size="-1">T</font></sub>Hgold</a>,
+version 4.00.<br />On 06 Nov 2017, 15:12.</small>
+</html>
