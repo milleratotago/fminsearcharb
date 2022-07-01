@@ -41,17 +41,18 @@ function [xparms,fval,exitflag,output] = fminsearcharb(ErrFun,x0parms,realstopar
 passedstruc.args = varargin;
 passedstruc.ErrFun = ErrFun;
 passedstruc.realstoparmsFn = realstoparmsFn;  % Remember, this is a function.
-passedstruc.allxsize = size(x0parms);
+passedstruc.allxsize = size(x0parms);  % I wish this could be numel but that causes problems elsewhere
 
 % Set default parmcodes if necessary:
 if (nargin<5)
     parmcodes = blanks(numel(x0parms));
     parmcodes(:) = 'r';
 else
-%        SizeOfx0parms = size(x0parms)
-%        SizeOfparmcodes = size(parmcodes)
-%    a = x0parms
-%    s = parmcodes
+    %        SizeOfx0parms = size(x0parms)
+    %        SizeOfparmcodes = size(parmcodes)
+    %    a = x0parms
+    %    s = parmcodes
+    parmcodes = reshape(parmcodes,1,[]);  % make sure it is a row array like x0parms
     assert(isequal(passedstruc.allxsize,size(parmcodes)),'sizes of x0parms and parmcodes must match');
 end
 parmcodes = lower(parmcodes);   % ensure all parmcode characters are lower case
@@ -60,6 +61,8 @@ passedstruc.parmcodes = parmcodes;
 % Check parmcodes to find out which parameters can be adjusted by fminsearch.
 passedstruc.adjaddresses = find(parmcodes~='f');  % non-fixed parameters can be adjusted by fminsearch.
 passedstruc.intaddresses = find(parmcodes=='i');  % integer parameters can be adjusted by fminsearch but are handled specially.
+passedstruc.varyxsize = passedstruc.allxsize;
+passedstruc.varyxsize(2) = numel(passedstruc.adjaddresses);
 
 % set default fmsoptions if necessary
 if (nargin<6) || isempty(fmsoptions)
@@ -155,7 +158,10 @@ end
 % compute the overall weighted average of the results.
 fval = 0;
 for iEval=1:NTableEntries
-    thisfval = feval(passedstruc.ErrFun,reshape(ParmSetTable{iEval},passedstruc.allxsize),passedstruc.args{:});
+    % There were problems with the next line when some parameters were fixed.
+    % ParmSetTable{iEval} just had the varying parameters, but passedstruc.allxsize had all parameters
+    % thisfval = feval(passedstruc.ErrFun,reshape(ParmSetTable{iEval},passedstruc.allxsize),passedstruc.args{:});
+    thisfval = feval(passedstruc.ErrFun,reshape(ParmSetTable{iEval},passedstruc.varyxsize),passedstruc.args{:});
     fval = fval + thisfval*EvalWeight(iEval);
 end
 
